@@ -1,61 +1,70 @@
-body {
-  font-family: Arial, sans-serif;
-  background: #F8F4FF;
-  margin: 0;
-  padding: 0;
+let posts = JSON.parse(localStorage.getItem("posts")) || [];
+
+function saveData() {
+  localStorage.setItem("posts", JSON.stringify(posts));
 }
 
-.container {
-  width: 90%;
-  max-width: 600px;
-  margin: auto;
-  text-align: center;
+function renderPosts() {
+  let postsDiv = document.getElementById("posts");
+  postsDiv.innerHTML = "";
+
+  posts.forEach((post, postIndex) => {
+    let postDiv = document.createElement("div");
+    postDiv.className = "post";
+
+    let commentsHTML = "";
+    post.comments.forEach(comment => {
+      commentsHTML += `<div class="comment">🤍 ${comment}</div>`;
+    });
+
+    postDiv.innerHTML = `
+      <p>${post.text}</p>
+
+      <div class="comment-box">
+        <input type="text" placeholder="write a reply..." id="c-${postIndex}" />
+        <button onclick="addComment(${postIndex})">Reply</button>
+
+        <div class="comments">
+          ${commentsHTML}
+        </div>
+      </div>
+    `;
+
+    postsDiv.appendChild(postDiv);
+  });
 }
 
-h1 {
-  margin-top: 30px;
+function addPost() {
+  let input = document.getElementById("postInput");
+  let text = input.value.trim();
+
+  if (!text) return;
+
+  posts.unshift({
+    text: text,
+    comments: []
+  });
+
+  input.value = "";
+  saveData();
+  renderPosts();
 }
 
-.subtitle {
-  color: gray;
-  font-size: 14px;
+function addComment(index) {
+  let input = document.getElementById(`c-${index}`);
+  let text = input.value.trim();
+
+  if (!text) return;
+
+  posts[index].comments.push(text);
+
+  input.value = "";
+  saveData();
+  renderPosts();
 }
 
-.post-box {
-  margin: 20px 0;
-}
-
-textarea {
-  width: 100%;
-  height: 80px;
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #ddd;
-}
-
-button {
-  margin-top: 10px;
-  padding: 8px 15px;
-  background: #D8B4FE;
-  border: none;
-  border-radius: 8px;
-  color: white;
-  cursor: pointer;
-}
-
-.post {
-  background: white;
-  padding: 15px;
-  margin: 10px 0;
-  border-radius: 10px;
-  text-align: left;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.comment-box {
-  margin-top: 10px;
-}
-
+// load when page opens
+renderPosts();
 .comment-box input {
   width: 70%;
   padding: 5px;
