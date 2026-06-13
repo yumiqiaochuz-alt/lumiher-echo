@@ -11,8 +11,10 @@ async function loadPosts() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) {
-    console.log("Load error:", error);
+if (error) {
+    console.log("Insert error:", error);
+    // This line will pop up a window telling you the EXACT error text:
+    alert("Database Error: " + error.message + " (" + error.code + ")");
     return;
   }
 
