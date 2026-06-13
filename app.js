@@ -1,81 +1,118 @@
-// Ensure the script wrapper starts safely
-(function() {
-  const supabaseUrl = "https://wuhbzcdodjavtcrigpfg.supabase.co";
-  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1aGJ6Y2RvZGphdnRjcmlncGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDk4NjIsImV4cCI6MjA5NjkyNTg2Mn0.Zr5ejcdWi2gw-mc0ULHaQfk4LO5Nhg5naVALcDqMzU44OTE1Mn0.4f1Z3f9m4H1J8mQ4m3m8M5m6m7m8m9m0m1m2m3m4m5m"; 
+const supabaseUrl = "https://wuhbzcdodjavtcrigpfg.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1aGJ6Y2RvZGphdnRjcmlncGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDk4NjIsImV4cCI6MjA5NjkyNTg2Mn0.Zr5ejcdWi2gw-mc0ULHaQfk4LO5Nhg5naVALcDqMzU4";
 
-  let supabase;
+let supabase;
 
-  // 1. Safely initialize Supabase
-  try {
-    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-      alert("❌ Critical Error: Supabase library failed to load from the internet CDN!");
-      return;
-    }
+// Safely initialize Supabase once the CDN is ready
+function initSupabase() {
+  if (window.supabase) {
     supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-  } catch (e) {
-    alert("❌ Initialization Failed: " + e.message);
+    loadPosts();
+  } else {
+    // If it's not ready yet, check again in 100ms
+    setTimeout(initSupabase, 100);
+  }
+}
+
+// 🌙 Load posts and their comments
+async function loadPosts() {
+  if (!supabase) return;
+
+  // Fetch posts
+  const { data: posts, error: postError } = await supabase
+    .from("posts")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (postError) {
+    alert("Database Error (Loading Posts): " + postError.message);
     return;
   }
 
-  // 2. Load posts function
-  async function loadPosts() {
-    try {
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .order("created_at", { ascending: false });
+  // Fetch comments
+  const { data: comments, error: commentError } = await supabase
+    .from("comments")
+    .select("*")
+    .order("created_at", { ascending: true });
 
-      if (error) {
-        alert("❌ Supabase Database Error: " + error.message);
-        return;
-      }
-
-      const postsDiv = document.getElementById("posts");
-      if (!postsDiv) return;
-      postsDiv.innerHTML = "";
-
-      if (data) {
-        data.forEach((post) => {
-          const postEl = document.createElement("div");
-          postEl.className = "post";
-          postEl.innerHTML = `<p>${post.text || ''}</p>`;
-          postsDiv.appendChild(postEl);
-        });
-      }
-    } catch (e) {
-      alert("❌ System Error during load: " + e.message);
-    }
+  if (commentError) {
+    alert("Database Error (Loading Comments): " + commentError.message);
+    return;
   }
 
-  // 3. Attach addPost directly to the global window object
-  window.addPost = async function () {
-    const input = document.getElementById("postInput");
-    if (!input) return;
+  const postsDiv = document.getElementById("posts");
+  postsDiv.innerHTML = "";
+
+  posts.forEach(post => {
+    const div = document.createElement("div");
+    div.className = "post";
+
+    // Filter comments that belong to this specific post
+    const postComments = comments ? comments.filter(c => c.post_id === post.id) : [];
     
-    const text = input.value.trim();
-    if (!text) return;
+    // Generate HTML for the comments list
+    let commentsHtml = '<div class="comments-list">';
+    postComments.forEach(comment => {
+      commentsHtml += `<p class="comment-text">↳ ${comment.text}</p>`;
+    });
+    commentsHtml += '</div>';
 
-    try {
-      const { error } = await supabase
-        .from("posts")
-        .insert([{ text }]);
+    div.innerHTML = `
+      <p class="post-main-text">${post.text}</p>
+      
+      ${commentsHtml}
 
-      if (error) {
-        alert("❌ Cannot save post: " + error.message);
-        return;
-      }
+      <div class="comment-box">
+        <input type="text" placeholder="write a reply..." />
+        <button onclick="addComment('${post.id}', this)">Reply</button>
+      </div>
+    `;
 
-      input.value = "";
-      await loadPosts();
-    } catch (e) {
-      alert("❌ System Error during post: " + e.message);
-    }
-  };
+    postsDiv.appendChild(div);
+  });
+}
 
-  // 4. Run initial load safely once the page content is ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", loadPosts);
-  } else {
-    loadPosts();
+// 🌙 Add post
+window.addPost = async function () {
+  if (!supabase) return;
+  const input = document.getElementById("postInput");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  const { error } = await supabase
+    .from("posts")
+    .insert([{ text }]);
+
+  if (error) {
+    alert("Cannot post ❌ Error: " + error.message);
+    return;
   }
-})();
+
+  input.value = "";
+  loadPosts();
+};
+
+// 🌙 Add comment
+window.addComment = async function (postId, btn) {
+  if (!supabase) return;
+  const input = btn.parentElement.querySelector("input");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  const { error } = await supabase
+    .from("comments")
+    .insert([{ post_id: postId, text }]);
+
+  if (error) {
+    alert("Cannot comment ❌ Error: " + error.message);
+    return;
+  }
+
+  input.value = "";
+  loadPosts();
+};
+
+// Start initialization checking
+initSupabase();
