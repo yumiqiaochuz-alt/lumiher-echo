@@ -1,27 +1,33 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-// 🔑 这里填你自己的
+// 🔑 replace with your own
 const SUPABASE_URL = "https://wuhbzcdodjavtcrigpfg.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_rQ_F06BTAYZSPvBfNK6hMw_bCPrvo53";
+const SUPABASE_KEY = "sb_publishable_RQ_F06BTAYZSPvBfNK6hMw_bCPrvo53";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// 🌙 load posts
+// 🌙 Load posts
 async function loadPosts() {
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("posts")
     .select("*")
     .order("created_at", { ascending: false });
 
-  let postsDiv = document.getElementById("posts");
+  if (error) {
+    console.log("Load error:", error);
+    return;
+  }
+
+  const postsDiv = document.getElementById("posts");
   postsDiv.innerHTML = "";
 
   data.forEach(post => {
-    let postDiv = document.createElement("div");
+    const postDiv = document.createElement("div");
     postDiv.className = "post";
 
     postDiv.innerHTML = `
       <p>${post.text}</p>
+
       <div class="comment-box">
         <input type="text" placeholder="write a reply..." />
         <button onclick="addComment('${post.id}', this)">Reply</button>
@@ -33,35 +39,51 @@ async function loadPosts() {
   });
 }
 
-// 🌙 add post
+// 🌙 Add post
 window.addPost = async function () {
-  let input = document.getElementById("postInput");
-  let text = input.value;
+  const input = document.getElementById("postInput");
+  const text = input.value.trim();
 
   if (!text) return;
 
-  await supabase.from("posts").insert([
-    { text: text }
-  ]);
+  const { error } = await supabase
+    .from("posts")
+    .insert([{ text }]);
+
+  if (error) {
+    console.log("Insert error:", error);
+    alert("Cannot post ❌ Check RLS or table");
+    return;
+  }
 
   input.value = "";
   loadPosts();
 };
 
-// 🌙 add comment
+// 🌙 Add comment
 window.addComment = async function (postId, btn) {
-  let input = btn.parentElement.querySelector("input");
-  let text = input.value;
+  const input = btn.parentElement.querySelector("input");
+  const text = input.value.trim();
 
   if (!text) return;
 
-  await supabase.from("comments").insert([
-    { post_id: postId, text: text }
-  ]);
+  const { error } = await supabase
+    .from("comments")
+    .insert([
+      { post_id: postId, text }
+    ]);
+
+  if (error) {
+    console.log("Comment error:", error);
+    alert("Cannot comment ❌");
+    return;
+  }
 
   input.value = "";
-  alert("reply sent 🤍 (v3 basic)");
+  alert("Reply sent 🤍");
+
+  loadPosts();
 };
 
-// 🌙 start
+// 🌙 init
 loadPosts();
