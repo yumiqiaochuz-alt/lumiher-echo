@@ -1,38 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LumiHer Echo</title>
-
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
   <div class="container">
-
     <h1>🌙 LumiHer Echo</h1>
     <p class="subtitle">a space to share thoughts & support each other</p>
 
-    <!-- Post Box -->
     <div class="post-box">
       <textarea id="postInput" placeholder="Write something..."></textarea>
       <button onclick="addPost()">Post</button>
     </div>
 
-    <!-- Posts -->
     <div id="posts"></div>
-
   </div>
 
-  <!-- 🌐 Supabase CDN (MUST be before app.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <!-- ⚙️ Your logic -->
-  <script src="app.js"></script>
+  <script>
+    const supabaseUrl = "https://wuhbzcdodjavtcrigpfg.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1aGJ6Y2RvZGphdnRjcmlncGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDk4NjIsImV4cCI6MjA5NjkyNTg2Mn0.Zr5ejcdWi2gw-mc0ULHaQfk4LO5Nhg5naVALcDqMzU4";
+
+    let supabase;
+
+    function initSupabase() {
+      // Force an alert right away so we know the script is alive!
+      alert("Script is running! Connecting to database...");
+
+      if (window.supabase) {
+        supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        loadPosts();
+      } else {
+        setTimeout(initSupabase, 100);
+      }
+    }
+
+    async function loadPosts() {
+      if (!supabase) return;
+      const { data: posts, error: postError } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (postError) {
+        alert("Database Error: " + postError.message);
+        return;
+      }
+
+      const postsDiv = document.getElementById("posts");
+      postsDiv.innerHTML = "";
+
+      if (posts) {
+        posts.forEach(post => {
+          const div = document.createElement("div");
+          div.className = "post";
+          div.innerHTML = `<p>${post.text}</p>`;
+          postsDiv.appendChild(div);
+        });
+      }
+    }
+
+    window.addPost = async function () {
+      if (!supabase) return;
+      const input = document.getElementById("postInput");
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      const { error } = await supabase
+        .from("posts")
+        .insert([{ text }]);
+
+      if (error) {
+        alert("Cannot post! Error: " + error.message);
+        return;
+      }
+
+      input.value = "";
+      loadPosts();
+    };
+
+    // Run immediately when page loads
+    window.onload = initSupabase;
+  </script>
 
 </body>
-
 </html>
