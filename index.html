@@ -1,7 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LumiHer Echo</title>
+
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -10,7 +14,7 @@
   <div class="container">
 
     <h1>🌙 LumiHer Echo</h1>
-    <p class="subtitle">share your thoughts & support each other</p>
+    <p class="subtitle">a space to share thoughts & support each other</p>
 
     <!-- Post Box -->
     <div class="post-box">
@@ -21,13 +25,14 @@
     <!-- Posts -->
     <div id="posts"></div>
 
-<body>
+  </div>
 
-  <div id="posts"></div>
-
+  <!-- 🌐 Supabase CDN (MUST be before app.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- ⚙️ Your logic -->
   <script src="app.js"></script>
 
 </body>
-    
+
 </html>
