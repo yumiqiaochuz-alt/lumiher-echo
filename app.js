@@ -1,7 +1,8 @@
 const supabaseUrl = "https://wuhbzcdodjavtcrigpfg.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1aGJ6Y2RvZGphdnRjcmlncGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDk4NjIsImV4cCI6MjA5NjkyNTg2Mn0.Zr5ejcdWi2gw-mc0ULHaQfk4LO5Nhg5naVALcDqMzU4";
+// Keep your exact supabaseKey string from your original file here:
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1aGJ6Y2RvZGphdnRjcmlncGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDk4NjIsImV4cCI6MjA5NjkyNTg2Mn0.Zr5ejcdWi2gw-mc0ULHaQfk4LO5Nhg5naVALcDqMzU4"; 
 
-// create client (NO import version)
+// Create client (NO import version)
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // 🌙 Load posts
@@ -11,30 +12,20 @@ async function loadPosts() {
     .select("*")
     .order("created_at", { ascending: false });
 
-if (error) {
-    console.log("Insert error:", error);
-    // This line will pop up a window telling you the EXACT error text:
-    alert("Database Error: " + error.message + " (" + error.code + ")");
+  if (error) {
+    console.log("Load error:", error);
+    alert("Connection Fail: " + error.message);
     return;
   }
 
   const postsDiv = document.getElementById("posts");
   postsDiv.innerHTML = "";
 
-  data.forEach(post => {
-    const div = document.createElement("div");
-    div.className = "post";
-
-    div.innerHTML = `
-      <p>${post.text}</p>
-
-      <div class="comment-box">
-        <input type="text" placeholder="write a reply..." />
-        <button onclick="addComment('${post.id}', this)">Reply</button>
-      </div>
-    `;
-
-    postsDiv.appendChild(div);
+  data.forEach((post) => {
+    const postEl = document.createElement("div");
+    postEl.className = "post";
+    postEl.innerHTML = `<p>${post.text}</p>`;
+    postsDiv.appendChild(postEl);
   });
 }
 
@@ -51,7 +42,7 @@ window.addPost = async function () {
 
   if (error) {
     console.log("Insert error:", error);
-    alert("Cannot post ❌ Check Supabase RLS or table");
+    alert("Database Error: " + error.message + " (" + error.code + ")");
     return;
   }
 
@@ -59,26 +50,5 @@ window.addPost = async function () {
   loadPosts();
 };
 
-// 🌙 Add comment (simple version)
-window.addComment = async function (postId, btn) {
-  const input = btn.parentElement.querySelector("input");
-  const text = input.value.trim();
-
-  if (!text) return;
-
-  const { error } = await supabase
-    .from("comments")
-    .insert([{ post_id: postId, text }]);
-
-  if (error) {
-    console.log("Comment error:", error);
-    alert("Cannot comment ❌");
-    return;
-  }
-
-  input.value = "";
-  loadPosts();
-};
-
-// 🌙 start app
+// Load posts immediately when page opens
 loadPosts();
